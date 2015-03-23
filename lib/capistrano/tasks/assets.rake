@@ -54,9 +54,14 @@ namespace :deploy do
   namespace :assets do
     task :precompile do
       on release_roles(fetch(:assets_roles)) do
-        within release_path do
-          with rails_env: fetch(:rails_env) do
-            execute :rake, "assets:precompile"
+        if test("diff -q #{release_path}/app/assets #{current_path}/app/assets")
+          info '[deploy:assets:precompile] Skip `deploy:assets:precompile` (nothing changed in app/assets)'
+        else
+          info '[deploy:assets:precompile] Run `deploy:assets:precompile`'
+          within release_path do
+            with rails_env: fetch(:rails_env) do
+              execute :rake, "assets:precompile"
+            end
           end
         end
       end
