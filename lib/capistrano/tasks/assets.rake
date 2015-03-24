@@ -54,15 +54,17 @@ namespace :deploy do
   namespace :assets do
     task :precompile do
       on release_roles(fetch(:assets_roles)) do
-        if test("diff -q #{release_path}/app/assets #{current_path}/app/assets")
-          info '[deploy:assets:precompile] Skip `deploy:assets:precompile` (nothing changed in app/assets)'
-        else
-          info '[deploy:assets:precompile] Run `deploy:assets:precompile`'
+        assets_force_compile = fetch(:assets_force_compile)
+        info '[deploy:assets:precompile] Checking changes in /app/assets' unless assets_force_compile
+        if assets_force_compile || !test("diff -qr #{release_path}/app/assets #{current_path}/app/assets")
+          info "[deploy:assets:precompile] Run `deploy:assets:precompile`"
           within release_path do
             with rails_env: fetch(:rails_env) do
               execute :rake, "assets:precompile"
             end
           end
+        else
+          info "[deploy:assets:precompile] Skip `deploy:assets:precompile` (nothing changed in app/assets)"
         end
       end
     end
@@ -104,6 +106,7 @@ namespace :load do
   task :defaults do
     set :assets_roles, fetch(:assets_roles, [:web])
     set :assets_prefix, fetch(:assets_prefix, 'assets')
+    set :assets_force_compile, fetch(:assets_force_compile, false)
     set :linked_dirs, fetch(:linked_dirs, []).push("public/#{fetch(:assets_prefix)}")
   end
 end
